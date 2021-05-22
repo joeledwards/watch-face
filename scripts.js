@@ -1,21 +1,34 @@
-function tick () {
-  //const delay = 50
+function tickSecond (ts) {
+  // Change hand rotation
+  const second = ts.getSeconds() + (ts.getMilliseconds() / 1000.0)
+  const degrees = second / 60.0 * 360.0
+  const hourHand = document.getElementById('second-hand')
+  hourHand.setAttribute('transform', `rotate(${degrees})`)
+}
 
+function tickHour (ts) {
+  // Change hand rotation
+  const hour = ts.getHours() + ts.getMinutes() / 60.0
+  const degrees = hour / 24.0 * 360.0
+  const hourHand = document.getElementById('hour-hand')
+  hourHand.setAttribute('transform', `rotate(${degrees})`)
+}
+
+function tick(smooth) {
   const ts = new Date()
-  console.info(ts.toISOString())
+  //console.info(ts.toISOString())
 
   // Setup next tick
-  const delay = 1000 - ts.getMilliseconds()
-  setTimeout(tick, delay)
+  const delay = smooth ? 50 : 1000 - ts.getMilliseconds()
+  setTimeout(() => tick(smooth), delay)
 
-  // Change hand rotation
-  const second = ts.getSeconds()
-  const hourHand = document.getElementById('hour-hand')
-  const degrees = 6 * second
-  hourHand.setAttribute('transform', `rotate(${degrees})`)
+  tickSecond(ts)
+  tickHour(ts)
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   console.log("DOM Loaded.");
-  tick()
+  const smooth = true
+  tick(smooth)
 });
+
