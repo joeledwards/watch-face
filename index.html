@@ -1,0 +1,48 @@
+<html>
+  <head>
+    <title>24-Hour Watch</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="scripts.js"></script>
+  </head>
+  <body>
+    <div id="viewport">
+      <svg id="watch" width="410" height="410">
+        <!-- Perimeter -->
+        <circle id="chrome" cx="205" cy="205" r="205" fill="white" />
+
+        <!-- Inner watch face -->
+        <circle id="face" cx="205" cy="205" r="200" fill="lightgrey" />
+
+        <!-- Tick Marks -->
+        <rect id="tick-0"  x=205 y=5 height="20" width="5" fill="black" transform-origin="center" transform="rotate(0)" />
+        <rect id="tick-1"  x=205 y=5 height="20" width="5" fill="black" transform-origin="center" transform="rotate(15)" />
+        <rect id="tick-2"  x=205 y=5 height="20" width="5" fill="black" transform-origin="center" transform="rotate(30)" />
+        <rect id="tick-3"  x=205 y=5 height="20" width="5" fill="black" transform-origin="center" transform="rotate(45)" />
+        <rect id="tick-4"  x=205 y=5 height="20" width="5" fill="black" transform-origin="center" transform="rotate(60)" />
+        <rect id="tick-5"  x=205 y=5 height="20" width="5" fill="black" transform-origin="center" transform="rotate(75)" />
+        <rect id="tick-6"  x=205 y=5 height="20" width="5" fill="black" transform-origin="center" transform="rotate(90)" />
+        <rect id="tick-7"  x=205 y=5 height="20" width="5" fill="black" transform-origin="center" transform="rotate(105)" />
+        <rect id="tick-8"  x=205 y=5 height="20" width="5" fill="black" transform-origin="center" transform="rotate(120)" />
+        <rect id="tick-9"  x=205 y=5 height="20" width="5" fill="black" transform-origin="center" transform="rotate(135)" />
+        <rect id="tick-10" x=205 y=5 height="20" width="5" fill="black" transform-origin="center" transform="rotate(150)" />
+        <rect id="tick-11" x=205 y=5 height="20" width="5" fill="black" transform-origin="center" transform="rotate(165)" />
+        <rect id="tick-12" x=205 y=5 height="20" width="5" fill="black" transform-origin="center" transform="rotate(180)" />
+        <rect id="tick-13" x=205 y=5 height="20" width="5" fill="black" transform-origin="center" transform="rotate(195)" />
+        <rect id="tick-14" x=205 y=5 height="20" width="5" fill="black" transform-origin="center" transform="rotate(210)" />
+        <rect id="tick-15" x=205 y=5 height="20" width="5" fill="black" transform-origin="center" transform="rotate(225)" />
+        <rect id="tick-16" x=205 y=5 height="20" width="5" fill="black" transform-origin="center" transform="rotate(240)" />
+        <rect id="tick-17" x=205 y=5 height="20" width="5" fill="black" transform-origin="center" transform="rotate(255)" />
+        <rect id="tick-18" x=205 y=5 height="20" width="5" fill="black" transform-origin="center" transform="rotate(270)" />
+        <rect id="tick-19" x=205 y=5 height="20" width="5" fill="black" transform-origin="center" transform="rotate(285)" />
+        <rect id="tick-20" x=205 y=5 height="20" width="5" fill="black" transform-origin="center" transform="rotate(300)" />
+        <rect id="tick-21" x=205 y=5 height="20" width="5" fill="black" transform-origin="center" transform="rotate(315)" />
+        <rect id="tick-22" x=205 y=5 height="20" width="5" fill="black" transform-origin="center" transform="rotate(330)" />
+        <rect id="tick-23" x=205 y=5 height="20" width="5" fill="black" transform-origin="center" transform="rotate(345)" />
+
+        <!-- Hour Hand -->
+        <!--circle cx="205" cy="205" r=15 fill="black" /-->
+        <rect id="hour-hand" x="205" y="45" height="160" width="5" fill="black" transform-origin="center" transform="rotate(30)" />
+      </svg>
+    </div>
+  </body>
+</html>
