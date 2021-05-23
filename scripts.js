@@ -1,6 +1,7 @@
 
 const state = {}
 
+const updateInterval = 50
 const watchRadius = 250
 const chromeWidth = 5
 const numeralsWidth = 30
@@ -31,9 +32,6 @@ function tickHour (ts) {
   if (state.hourHand) {
     state.hourHand.setAttribute('transform', `rotate(${degrees})`)
   }
-  if (state.hourMark) {
-    state.hourMark.setAttribute('transform', `rotate(${degrees})`)
-  }
 }
 
 function tick(smooth) {
@@ -43,7 +41,7 @@ function tick(smooth) {
   }
 
   // Setup next tick
-  const delay = smooth ? 50 : 1000 - ts.getMilliseconds()
+  const delay = smooth ? updateInterval : 1000 - ts.getMilliseconds()
   setTimeout(() => tick(smooth), delay)
 
   tickSecond(ts)
@@ -94,6 +92,8 @@ function drawClock () {
 }
 
 function addTicks (clock) {
+  const subHourAdjust = 15 / 4
+
   for (let i = 0; i < 24; i++) {
     const degrees = i * 15
     //const height = (i % 6) ? 20 : 35
@@ -102,27 +102,43 @@ function addTicks (clock) {
 
     // Add a number
     svg(clock, 'text', {
-      x: 250,
+      x: watchRadius,
       y: 30,
       'font-family': 'serif',
       'font-size': '20px',
       fill,
       'transform-origin': 'center',
-      transform: `rotate(${degrees - 1.5})`,
+      transform: `rotate(${degrees - 2.35})`,
     }).textContent = ('0' + i).slice(-2)
 
     //text.appendChild(`${i}`)
 
     // Add a tick mark
-    svg(clock, 'rect', {
-      x: watchRadius,
-      y: 40,
-      height,
-      width: 5,
+    svg(clock, 'polygon', {
+      points: `${watchRadius - 5},42 ${watchRadius + 5},42 ${watchRadius + 2},60 ${watchRadius - 2},60`,
       fill,
       'transform-origin': 'center',
       transform: `rotate(${degrees})`,
     })
+
+    // Add sub-hour ticks
+    for (let i = 1; i <= 3; i++) {
+      /* These make the face a bit too busy
+      svg(clock, 'polygon', {
+        points: `${watchRadius - 1},17 ${watchRadius + 1},17 ${watchRadius + 1},20, ${watchRadius - 1},20`,
+        fill,
+        'transform-origin': 'center',
+        transform: `rotate(${subHourAdjust * i + degrees})`,
+      })
+      */
+
+      svg(clock, 'polygon', {
+        points: `${watchRadius - 1},55 ${watchRadius + 1},55 ${watchRadius + 1},60, ${watchRadius - 1},60`,
+        fill,
+        'transform-origin': 'center',
+        transform: `rotate(${subHourAdjust * i + degrees})`,
+      })
+    }
   }
 }
 
@@ -132,34 +148,23 @@ function addNumerals (clock) {
 function addHands (clock) {
   state.hourHand = svg(clock, 'polygon', {
     id: 'hour-hand',
-    points: `249.5,65, 250.5,65 260,270, 240,270`,
+    points: `${watchRadius - .5},65, ${watchRadius + .5},65 ${watchRadius + 10},270, ${watchRadius - 10},270`,
     fill: colors.hourHand,
     'transform-origin': 'center',
   })
   svg(clock, 'circle', {
     id: 'hour-hand',
-    cx: 250,
-    cy: 250,
+    cx: watchRadius,
+    cy: watchRadius,
     r: 5,
     fill: colors.background,
     'transform-origin': 'center',
   })
   console.info(state.hourHand)
 
-  state.hourMark = svg(clock, 'polygon', {
-    id: 'hour-mark',
-    points: `245,5, 255,5 250,15 250,15`,
-    fill: colors.hourHand,
-    'transform-origin': 'center',
-  })
-  console.info(state.hourHand)
-
-  state.secondHand = svg(clock, 'rect', {
+  state.secondHand = svg(clock, 'polygon', {
     id: 'second-hand',
-    x: watchRadius,
-    y: 40,
-    height: 20,
-    width: 5,
+    points: `${watchRadius - 10},5, ${watchRadius + 10},5 ${watchRadius},15 ${watchRadius},15`,
     fill: colors.secondHand,
     'transform-origin': 'center',
   })
