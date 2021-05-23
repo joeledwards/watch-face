@@ -9,7 +9,7 @@ const colors = {
   background: '#000000',
   chrome: '#cccccc',
   evenTick: 'orange',
-  hourHand: '#00cc00',
+  hourHand: '#cccccc',
   oddTick: '#cccccc',
   secondHand: '#00cc00',
   text: '#cccccc',
@@ -30,6 +30,9 @@ function tickHour (ts) {
   const degrees = hour / 24.0 * 360.0
   if (state.hourHand) {
     state.hourHand.setAttribute('transform', `rotate(${degrees})`)
+  }
+  if (state.hourMark) {
+    state.hourMark.setAttribute('transform', `rotate(${degrees})`)
   }
 }
 
@@ -100,7 +103,7 @@ function addTicks (clock) {
     // Add a number
     svg(clock, 'text', {
       x: 250,
-      y: 27,
+      y: 30,
       'font-family': 'serif',
       'font-size': '20px',
       fill,
@@ -127,12 +130,25 @@ function addNumerals (clock) {
 }
 
 function addHands (clock) {
-  state.hourHand = svg(clock, 'rect', {
+  state.hourHand = svg(clock, 'polygon', {
     id: 'hour-hand',
-    x: watchRadius,
-    y: 95,
-    height: 175,
-    width: 5,
+    points: `249.5,65, 250.5,65 260,270, 240,270`,
+    fill: colors.hourHand,
+    'transform-origin': 'center',
+  })
+  svg(clock, 'circle', {
+    id: 'hour-hand',
+    cx: 250,
+    cy: 250,
+    r: 5,
+    fill: colors.background,
+    'transform-origin': 'center',
+  })
+  console.info(state.hourHand)
+
+  state.hourMark = svg(clock, 'polygon', {
+    id: 'hour-mark',
+    points: `245,5, 255,5 250,15 250,15`,
     fill: colors.hourHand,
     'transform-origin': 'center',
   })
