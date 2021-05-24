@@ -97,11 +97,12 @@ function addTicks (clock) {
     svg(clock, 'text', {
       x: watchRadius,
       y: 30,
+      'text-anchor': 'middle',
       'font-family': 'serif',
       'font-size': '20px',
       fill,
       'transform-origin': 'center',
-      transform: `rotate(${degrees - 2.35})`,
+      transform: `rotate(${degrees})`,
     }).textContent = ('0' + i).slice(-2)
 
     //text.appendChild(`${i}`)
