@@ -2,6 +2,9 @@ const config = {
   // Place noon (rather than midnight) at the top of the clock face
   noonOnTop: false,
 
+  // Rotate numerals (oriented with the top of the watch face)
+  rotateNumerals: true,
+
   // Update continuously rather than once per second
   smooth: true,
 
@@ -27,14 +30,6 @@ const colors = {
 }
 
 
-// Store references to the SVG elements we will be transforming
-const state = {}
-
-const clockRadius = 250
-const metaRadius = 50
-const chromeWidth = 5
-const numeralsWidth = 30
-
 function millis (ts) { return ts.getMilliseconds() }
 function second (ts) { return config.utc ? ts.getUTCSeconds() : ts.getSeconds() }
 function minute (ts) { return config.utc ? ts.getUTCMinutes() : ts.getMinutes() }
@@ -55,42 +50,42 @@ function degree (degrees) {
   }
 }
 
-function tickSecond (ts) {
+function tickSecond (state, ts) {
   // Compute how many degrees to rotate the second hand
   const seconds = second(ts) + (millis(ts) / 1000.0)
   const degrees = degree(seconds / 60.0 * 360.0)
 
   // Apply the transformation
   if (config.swapSecondAndHour) {
-    rotateHour(ts, degrees)
+    rotateHour(state, ts, degrees)
   } else {
-    rotateSecond(ts, degrees)
+    rotateSecond(state, ts, degrees)
   }
 }
 
-function rotateSecond (ts, degrees) {
+function rotateSecond (state, ts, degrees) {
   // Translate the second "hand" (green arrow on the perimeter)
-  state.secondHand.setAttribute('transform', `rotate(${degrees}, ${clockRadius}, ${clockRadius})`)
+  state.secondHand.setAttribute('transform', `rotate(${degrees}, ${state.clockRadius}, ${state.clockRadius})`)
 }
 
-function tickHour (ts) {
+function tickHour (state, ts) {
   // Compute how many degrees to rotate the second hand
   const hours = hour(ts) + minute(ts) / 60.0
   const degrees = degree(hours / 24.0 * 360.0)
 
   // Apply the transformation
   if (config.swapSecondAndHour) {
-    rotateSecond(ts, degrees)
+    rotateSecond(state, ts, degrees)
   } else {
-    rotateHour(ts, degrees)
+    rotateHour(state, ts, degrees)
   }
 }
 
-function rotateHour (ts, degrees) {
+function rotateHour (state, ts, degrees) {
   // Translate the hour hand and associated content (date and its container)
-  state.hourHand.setAttribute('transform', `rotate(${degrees}, ${clockRadius}, ${clockRadius})`)
-  state.meta.setAttribute('transform', `rotate(${degrees}, ${clockRadius}, ${clockRadius})`)
-  state.metaText.setAttribute('transform', `rotate(${degrees}, ${clockRadius}, ${clockRadius}) rotate(${360-degrees}, ${clockRadius}, ${clockRadius+100})`)
+  state.hourHand.setAttribute('transform', `rotate(${degrees}, ${state.clockRadius}, ${state.clockRadius})`)
+  state.meta.setAttribute('transform', `rotate(${degrees}, ${state.clockRadius}, ${state.clockRadius})`)
+  state.metaText.setAttribute('transform', `rotate(${degrees}, ${state.clockRadius}, ${state.clockRadius}) rotate(${360-degrees}, ${state.clockRadius}, ${state.clockRadius+state.metaOffset})`)
 }
 
 function dateString (ts) {
@@ -111,24 +106,42 @@ function timeString (ts) {
   return `${hourStr}:${minuteStr}:${secondStr}`
 }
 
-function tickDate (ts) {
+function tickDate (state, ts) {
   // Update the date
   state.metaText.textContent = dateString(ts)
 }
 
-function tick(smooth) {
-  const ts = new Date()
-  if (!smooth) {
+function now () {
+  return new Date()
+}
+
+function utc () {
+  const t = now()
+  return new Date(
+    t.getUTCFullYear(),
+    t.getUTCMonth(),
+    t.getUTCDate(),
+    t.getUTCHours(),
+    t.getUTCMinutes(),
+    t.getUTCSeconds(),
+    t.getUTCMilliseconds()
+  )
+}
+
+function tick(state, local) {
+  const ts = local ? now() : utc()
+
+  if (!config.smooth) {
     console.info(ts.toISOString())
   }
 
   // Schedule the next tick
-  const delay = smooth ? config.updateInterval : 1000 - millis(ts)
-  setTimeout(() => tick(smooth), delay)
+  const delay = config.smooth ? config.updateInterval : 1000 - millis(ts)
+  setTimeout(() => tick(state, local), delay)
 
-  tickDate(ts)
-  tickSecond(ts)
-  tickHour(ts)
+  tickDate(state, ts)
+  tickSecond(state, ts)
+  tickHour(state, ts)
 }
 
 // Creates a new SVG element on the DOM, and appends it to the supplied SVG
@@ -142,38 +155,49 @@ function svg (container, name, attributes) {
 }
 
 // Add all of the tick marks to the clock face
-function addTicks (clock) {
+function addTicks (state, id, clock) {
   const subHourAdjust = 15 / 4
 
   for (let i = 0; i < 24; i++) {
     const degrees = degree(i * 15)
-    const height = 20
     const fill = (i % 2) ? colors.oddTick : colors.evenTick
+
+    const numeralCorrection = config.rotateNumerals ? `rotate(${360 - degrees}, ${state.clockRadius}, ${state.numeralHeightAdjust})` : ''
 
     // Add an hour number
     svg(clock, 'text', {
-      x: clockRadius,
-      y: 30,
+      x: state.clockRadius,
+      y: state.numeralOffset,
       'text-anchor': 'middle',
       'font-family': 'serif',
-      'font-size': '20px',
+      'font-size': `${state.numeralFontSize}px`,
       fill,
-      'transform-origin': 'center',
-      transform: `rotate(${degrees})`,
+      transform: `rotate(${degrees}, ${state.clockRadius}, ${state.clockRadius}) ${numeralCorrection}`,
     }).textContent = ('0' + i).slice(-2)
 
     // Add an hour tick mark
+    const tickAdjustTop = state.tickWidthTop / 2
+    const tickAdjustBottom = state.tickWidthBottom / 2
+    const tickTopLeft = [state.clockRadius - tickAdjustTop, state.tickTop].join(',')
+    const tickTopRight = [state.clockRadius + tickAdjustTop, state.tickTop].join(',')
+    const tickBottomRight = [state.clockRadius + tickAdjustBottom, state.tickBottom].join(',')
+    const tickBottomLeft = [state.clockRadius - tickAdjustBottom, state.tickBottom].join(',')
     svg(clock, 'polygon', {
-      points: `${clockRadius - 5},42 ${clockRadius + 5},42 ${clockRadius + 2},60 ${clockRadius - 2},60`,
+      points: `${tickTopLeft} ${tickTopRight} ${tickBottomRight} ${tickBottomLeft}`,
       fill,
       'transform-origin': 'center',
       transform: `rotate(${degrees})`,
     })
 
     // Add sub-hour ticks (15-minute increments)
+    const subTickAdjust = state.subTickWidth / 2
+    const subTickTopLeft = [state.clockRadius - subTickAdjust, state.subTickTop].join(',')
+    const subTickTopRight = [state.clockRadius + subTickAdjust, state.subTickTop].join(',')
+    const subTickBottomRight = [state.clockRadius + subTickAdjust, state.subTickBottom].join(',')
+    const subTickBottomLeft = [state.clockRadius - subTickAdjust, state.subTickBottom].join(',')
     for (let i = 1; i <= 3; i++) {
       svg(clock, 'polygon', {
-        points: `${clockRadius - 1},55 ${clockRadius + 1},55 ${clockRadius + 1},60, ${clockRadius - 1},60`,
+        points: `${subTickTopLeft} ${subTickTopRight} ${subTickBottomRight} ${subTickBottomLeft}`,
         fill,
         'transform-origin': 'center',
         transform: `rotate(${subHourAdjust * i + degrees})`,
@@ -182,40 +206,48 @@ function addTicks (clock) {
   }
 }
 
-function addHands (clock) {
+function addHands (state, id, clock) {
   // Add the hour-hand (long, inner needle)
+  const hrTipLeft = [ state.clockRadius - (state.hourHandTipWidth / 2), state.hourHandEnd ].join(',')
+  const hrTipRight = [ state.clockRadius + (state.hourHandTipWidth / 2), state.hourHandEnd ].join(',')
+  const hrBaseRight = [ state.clockRadius + (state.hourHandBaseWidth / 2), state.hourHandStart ].join(',')
+  const hrBaseLeft = [ state.clockRadius - (state.hourHandBaseWidth / 2), state.hourHandStart ].join(',')
   state.hourHand = svg(clock, 'polygon', {
-    id: 'hour-hand',
-    points: `${clockRadius - .5},65, ${clockRadius + .5},65 ${clockRadius + 10},270, ${clockRadius - 10},270`,
+    id: `${id}-hour-hand`,
+    points: `${hrTipLeft} ${hrTipRight} ${hrBaseRight} ${hrBaseLeft}`,
     fill: colors.hourHand,
   })
   svg(clock, 'circle', {
-    id: 'hour-axis',
-    cx: clockRadius,
-    cy: clockRadius,
-    r: 5,
+    id: `${id}-hour-axis`,
+    cx: state.clockRadius,
+    cy: state.clockRadius,
+    r: state.hourHandAxisRadius,
     fill: colors.background,
   })
   console.info(state.hourHand)
 
   // Add the second-hand (outer-sweeping triangle)
+  const srBaseLeft = [ state.clockRadius - (state.secondHandBaseWidth / 2), state.secondHandStart ].join(',')
+  const srBaseRight = [ state.clockRadius + (state.secondHandBaseWidth / 2), state.secondHandStart ].join(',')
+  const srTipRight = [ state.clockRadius + (state.secondHandTipWidth / 2), state.secondHandEnd ].join(',')
+  const srTipLeft = [ state.clockRadius - (state.secondHandTipWidth / 2), state.secondHandEnd ].join(',')
   state.secondHand = svg(clock, 'polygon', {
-    id: 'second-hand',
-    points: `${clockRadius - 10},5, ${clockRadius + 10},5 ${clockRadius},15 ${clockRadius},15`,
+    id: `${id}-second-hand`,
+    points: `${srBaseLeft} ${srBaseRight} ${srTipRight} ${srTipLeft}`,
     fill: colors.secondHand,
   })
   console.info(state.secondHand)
 }
 
 // Add the metadata region, which houses the date by default
-function addMeta (clock) {
+function addMeta (state, id, clock) {
   // The circle surrounding the date
   state.meta = svg(clock, 'circle', {
-    id: 'metadata',
-    cx: clockRadius,
-    cy: clockRadius + 100,
-    r: metaRadius,
-    'stroke-width': 2,
+    id: `${id}-metadata`,
+    cx: state.clockRadius,
+    cy: state.clockRadius + state.metaOffset,
+    r: state.metaRadius,
+    'stroke-width': state.metaStrokeWidth,
     stroke: colors.hourHand,
     overflow: 'visible',
   })
@@ -223,57 +255,122 @@ function addMeta (clock) {
 
   // The metadata text field (contains the date by default)
   state.metaText = svg(clock, 'text', {
-    id: 'meta-text',
-    x: clockRadius,
-    y: clockRadius + 105,
+    id: `${id}-meta-text`,
+    x: state.clockRadius,
+    y: state.clockRadius + state.metaTextOffset,
     fill: colors.meta,
     'text-anchor': 'middle',
     'font-family': 'serif',
-    'font-size': '16px',
+    'font-size': `${state.metaFontSize}px`,
     overflow: 'visible'
   })
   console.info(state.metaText)
 }
 
 // Draw the clock
-function drawClock () {
-  const viewPort = document.getElementById('viewport')
+function drawClock (state, id) {
+  // TODO: figure out how to reduce the size
+
+  const viewPort = document.getElementById(id)
   console.info(viewPort);
 
   const clock = svg(viewport, 'svg', {
-    id: 'clock',
-    height: clockRadius * 2,
-    width: clockRadius * 2,
+    id: `${id}-clock`,
+    height: state.clockRadius * 2,
+    width: state.clockRadius * 2,
   })
 
   console.info(clock)
 
   ;([
     [0, colors.chrome],
-    [chromeWidth, colors.background],
-    [numeralsWidth + chromeWidth, colors.chrome],
-    [chromeWidth * 2 + numeralsWidth, colors.background],
+    [state.chromeWidth, colors.background],
+    [state.numeralWidth + state.chromeWidth, colors.chrome],
+    [state.chromeWidth * 2 + state.numeralWidth, colors.background],
   ]).forEach(([inset, fill]) => {
     const circle = svg(clock, 'circle', {
-      cx: clockRadius,
-      cy: clockRadius,
-      r: clockRadius - inset,
+      cx: state.clockRadius,
+      cy: state.clockRadius,
+      r: state.clockRadius - inset,
       fill: fill,
     })
     console.info(circle)
   })
 
-  addTicks(clock)
-  addHands(clock)
-  addMeta(clock)
+  addHands(state, id, clock)
+  addTicks(state, id, clock)
+  addMeta(state, id, clock)
 
   // Add the clock to the viewport
   viewPort.appendChild(clock)
 }
 
+function baseState ({ sizeFactor = 1.0 }) {
+  const size = dimension => sizeFactor * dimension
+
+  // Dimension configuration
+  return {
+    // Clock dimensions
+    clockRadius: size(250),
+    chromeWidth: size(5),
+
+    numeralWidth: size(30),
+    numeralOffset: size(30),
+    numeralFontSize: size(20),
+    numeralHeightAdjust: size(23),
+
+    // Second Hand
+    /*
+    secondHandBaseWidth: size(20),
+    secondHandTipWidth: size(15),
+    secondHandStart: size(5),
+    secondHandEnd: size(12),
+    */
+    secondHandBaseWidth: size(15),
+    secondHandTipWidth: size(10),
+    secondHandStart: size(5),
+    secondHandEnd: size(10),
+
+    // Hour Hand
+    hourHandBaseWidth: size(20),
+    hourHandTipWidth: size(2),
+    hourHandAxisRadius: size(5),
+    hourHandStart: size(270),
+    hourHandEnd: size(65),
+
+    // Hour Ticks
+    tickTop: size(42),
+    tickBottom: size(60),
+    tickWidthTop: size(10),
+    tickWidthBottom: size(4),
+
+    // Sub-hour Ticks
+    subTickTop: size(55),
+    subTickBottom: size(60),
+    subTickWidth: size(2),
+
+    // Meta Dimensions
+    metaRadius: size(60),
+    metaOffset: size(100),
+    metaStrokeWidth: size(2),
+    metaTextOffset: size(105),
+    metaFontSize: size(20),
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   console.log("DOM Loaded.");
-  drawClock()
-  tick(config.smooth)
+
+  // Store references to the SVG elements we will be transforming
+  const state = {
+    local: baseState({ sizeFactor: 1.5 }),
+    utc: baseState({ sizeFactor: 1.0 }),
+  }
+
+  drawClock(state.local, 'local')
+  drawClock(state.utc, 'utc')
+
+  tick(state.local, true)
+  tick(state.utc, false)
 });
 
